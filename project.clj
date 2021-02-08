@@ -1,4 +1,4 @@
-(defproject blackwaterpark/data.csv "0.1.0-SNAPSHOT"
+(defproject blackwaterpark/data.csv "1.0.0"
   :description "A Clojure library for reading and writing comma separated value (csv) files (Eva fork)"
   :url "https://example.com/FIXME"
   :license {:name "Eclipse Public License"
