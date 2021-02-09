@@ -4,3 +4,9 @@ resources/
 lib/
 *.jar
 .cpcache/
+.clj-kondo/
+.github/
+.lsp/
+/.lein-*
+pom.xml
+pom.xml.asc

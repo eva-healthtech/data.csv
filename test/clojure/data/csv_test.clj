@@ -77,3 +77,16 @@ air, moon roof, loaded\",4799.00")
     (is (= 2 (count csv)))
     (is (= ["Year" "Make" "Model"] (first csv)))
     (is (= ["1997" "Ford" "E350"] (second csv)))))
+
+(deftest writing-with-different-escape-char
+  (let [data [["This string \"contains\" quotes"]]
+        writer (StringWriter.)]
+    (write-csv writer data :escape \\)
+    (is (= "\"This string \\\"contains\\\" quotes\"\n" (str writer)))))
+
+(deftest reading-with-different-escape-char
+  (let [input "Key,Value\nExample,\"This \\\"contains\\\" quotes\""
+        csv (read-csv input :escape \\)]
+    (is (= 2 (count csv)))
+    (is (= ["Key" "Value"] (first csv)))
+    (is (= ["Example" "This \"contains\" quotes"] (second csv)))))
