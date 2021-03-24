@@ -47,6 +47,10 @@
                  ; Escape character followed by a quote is a quote
                  quote (do (.append sb (char quote))
                            (recur (.read reader)))
+                 
+                 ; Escape character followed by another escape character is an escape character
+                 escape (do (.append sb (char escape))
+                            (recur (.read reader)))
 
                  ; Escape character followed by anything else is the escape character
                  (do (.append sb (char escape))
@@ -121,8 +125,9 @@
 	must-quote (quote? string)]
     (when must-quote (.write writer (int quote)))
     (.write writer (if must-quote
-		     (str/escape string
-				 {quote (str escape quote)})
+		     (str/escape string 
+                   (merge {quote (str escape quote)}
+                          {escape (str escape escape)}))
 		     string))
     (when must-quote (.write writer (int quote)))))
 
