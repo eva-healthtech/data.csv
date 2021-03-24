@@ -1,9 +1,12 @@
 (ns clojure.data.csv-test
-  (:use
-   [clojure.test :only (deftest is)]
-   [clojure.data.csv :only (read-csv write-csv)])
+  (:require
+   [clojure.test :refer [deftest is]]
+   [clojure.test.check.clojure-test :refer [defspec]]
+   [clojure.test.check.generators :as gen]
+   [clojure.test.check.properties :as props]
+   [clojure.data.csv :refer [read-csv write-csv]])
   (:import
-   [java.io Reader StringReader StringWriter EOFException]))
+   [java.io StringWriter]))
 
 (def ^{:private true} simple
   "Year,Make,Model
@@ -78,15 +81,46 @@ air, moon roof, loaded\",4799.00")
     (is (= ["Year" "Make" "Model"] (first csv)))
     (is (= ["1997" "Ford" "E350"] (second csv)))))
 
-(deftest writing-with-different-escape-char
+(deftest writing-quotes-with-different-escape-char
   (let [data [["This string \"contains\" quotes"]]
         writer (StringWriter.)]
     (write-csv writer data :escape \\)
     (is (= "\"This string \\\"contains\\\" quotes\"\n" (str writer)))))
 
-(deftest reading-with-different-escape-char
+(deftest writing-escape-char-with-different-escape-char
+  (let [data [["This string contains the escape char\\"]]
+        writer (StringWriter.)]
+    (write-csv writer data :escape \\)
+    (is (= "This string contains the escape char\\\n" (str writer)))))
+
+(deftest reading-quotes-with-different-escape-char
   (let [input "Key,Value\nExample,\"This \\\"contains\\\" quotes\""
         csv (read-csv input :escape \\)]
     (is (= 2 (count csv)))
     (is (= ["Key" "Value"] (first csv)))
     (is (= ["Example" "This \"contains\" quotes"] (second csv)))))
+
+(deftest reading-escape-char-with-different-escape-char
+  (let [input "Key,Value\nExample,\"This contains the escape char \\\\\""
+        csv (read-csv input :escape \\)]
+    (is (= 2 (count csv)))
+    (is (= ["Key" "Value"] (first csv)))
+    (is (= ["Example", "This contains the escape char \\"] (second csv)))))
+
+(defspec roundtripping 250
+  (props/for-all [data (gen/vector (gen/vector gen/string 2 50) 1 100) ; 1-100 rows of 2-50 columns
+                  escape-char gen/char
+                  newline (gen/elements [:lf :cr+lf])]
+                 (let [write (fn [data]
+                               (let [writer (StringWriter.)]
+                                 (write-csv writer data
+                                            :escape escape-char
+                                            :newline newline)
+                                 (str writer)))
+                       csv (write data)                       
+                       expected-result (when (not= [[]] data)                                         
+                                         data)
+                       actual-result (read-csv csv 
+                                          :escape escape-char
+                                          :newline newline)]
+                   (is (= expected-result actual-result)))))
